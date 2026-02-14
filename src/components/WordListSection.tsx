@@ -114,7 +114,7 @@ const WordListSection = () => {
                               ref={registerRowRef(entry.id)}
                               className={
                                 highlightedIds.has(entry.id)
-                                  ? "bg-emerald-500/10"
+                                  ? "bg-emerald-400/45"
                                   : undefined
                               }
                             >
@@ -127,7 +127,13 @@ const WordListSection = () => {
                                   <span className="text-slate-600">•••••</span>
                                 )}
                               </td>
-                              <td className="px-4 py-4 text-right text-slate-500">
+                              <td
+                                className={`px-4 py-4 text-right ${
+                                  highlightedIds.has(entry.id)
+                                    ? "text-emerald-50"
+                                    : "text-slate-500"
+                                }`}
+                              >
                                 {isRevealed ? entry.reading : ""}
                               </td>
                               {hasAnyImage && (
