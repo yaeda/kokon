@@ -67,6 +67,9 @@ const OptionsDrawer = () => {
           >
             Spreadsheet URL
           </label>
+          <p className="text-xs text-slate-500">
+            1シート目を読み込みます。
+          </p>
           <input
             id="spreadsheet-url"
             type="url"

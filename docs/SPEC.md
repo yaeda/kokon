@@ -29,6 +29,7 @@
   - spreadsheetのURLはlocalStorageに保存する
   - 音声認識のON/OFFはlocalStorageに保存する
   - localStorageにURLがある場合は自動で読み込む
+  - 読み込み対象はスプレッドシートの1シート目
   - オンデバイス音声の準備ボタンがある
 - 入力
   - タイピング用の入力オーバーレイと、音声認識の結果オーバーレイを表示する
