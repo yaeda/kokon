@@ -1,6 +1,5 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
-import * as React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import AppHeader from "./components/AppHeader";
