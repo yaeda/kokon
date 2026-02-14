@@ -501,8 +501,8 @@ const App = () => {
   return (
     <React.Fragment>
       <div className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
-        <div className="pointer-events-none absolute top-0 left-1/2 h-[420px] w-[680px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_top,_rgba(190,24,93,0.25),_transparent_70%)] blur-3xl" />
-        <div className="pointer-events-none absolute bottom-[-120px] left-[-140px] h-[360px] w-[360px] rounded-full bg-[radial-gradient(circle,_rgba(14,116,144,0.25),_transparent_70%)] blur-3xl" />
+        <div className="pointer-events-none absolute top-0 left-1/2 h-105 w-170 -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_top,rgba(190,24,93,0.25),transparent_70%)] blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-30 -left-35 h-90 w-90 rounded-full bg-[radial-gradient(circle,rgba(14,116,144,0.25),transparent_70%)] blur-3xl" />
         <main className="relative mx-auto flex w-full max-w-none flex-col gap-8 px-6 pt-10 pb-16">
           <AppHeader />
           <WordListSection />
