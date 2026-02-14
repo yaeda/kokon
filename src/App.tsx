@@ -531,6 +531,17 @@ const App = () => {
           <WordListSection />
         </main>
       </div>
+      <button
+        type="button"
+        onClick={() => {
+          setIsTypingOpen(true);
+          setTypingValue("");
+        }}
+        className="fixed bottom-6 right-6 z-30 flex h-12 w-12 items-center justify-center rounded-full border border-slate-700 bg-slate-900/80 text-sm font-semibold text-white shadow-lg transition hover:border-slate-500 md:hidden"
+        aria-label="入力を開く"
+      >
+        入力
+      </button>
       <TypingOverlay
         onKeyDown={handleTypingKeyDown}
         onClose={closeTypingOverlay}

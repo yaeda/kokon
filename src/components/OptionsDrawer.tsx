@@ -143,7 +143,7 @@ const OptionsDrawer = () => {
             <div>
               <p className="text-sm text-white">音声認識</p>
               <p className="text-xs text-slate-500">
-                スペースキーを押している間に認識します。
+                PCブラウザ向け。スペースキーを押している間に認識します。
               </p>
             </div>
             <button

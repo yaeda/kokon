@@ -25,6 +25,9 @@ const TypingOverlay = ({
   const isPressing = useAtomValue(isPressingAtom);
   const typingValue = useAtomValue(typingValueAtom);
   const setTypingValue = useSetAtom(typingValueAtom);
+  const isMobile =
+    typeof navigator !== "undefined" &&
+    /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
   if (!isOpen) {
     return null;
@@ -45,20 +48,22 @@ const TypingOverlay = ({
             閉じる
           </button>
         </div>
-        <div className="mt-3 rounded-2xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-xs text-slate-400">
-          {isSpeechEnabled ? (
-            isSpeechSupported ? (
-              <span>
-                {isPressing ? "Listening..." : "Ready"} /
-                スペース長押しで音声入力
-              </span>
+        {!isMobile && (
+          <div className="mt-3 rounded-2xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-xs text-slate-400">
+            {isSpeechEnabled ? (
+              isSpeechSupported ? (
+                <span>
+                  {isPressing ? "Listening..." : "Ready"} /
+                  スペース長押しで音声入力
+                </span>
+              ) : (
+                "このブラウザでは音声認識が利用できません。"
+              )
             ) : (
-              "このブラウザでは音声認識が利用できません。"
-            )
-          ) : (
-            "音声認識はオプションで有効化できます。"
-          )}
-        </div>
+              "音声認識はオプションで有効化できます。"
+            )}
+          </div>
+        )}
         <input
           ref={inputRef}
           value={typingValue}

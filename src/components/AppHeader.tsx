@@ -11,7 +11,9 @@ const AppHeader = () => {
         <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
           KOKON
         </h1>
-        <p className="max-w-2xl text-sm text-slate-300">スペースを押して回答</p>
+        <p className="max-w-2xl text-sm text-slate-300">
+          スペースキー or 入力ボタンから回答
+        </p>
       </div>
       <button
         type="button"
