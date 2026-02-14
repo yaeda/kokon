@@ -3,6 +3,11 @@ import type { FormEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
 import * as React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
+import AppHeader from "./components/AppHeader";
+import ListeningOverlay from "./components/ListeningOverlay";
+import OptionsDrawer from "./components/OptionsDrawer";
+import TypingOverlay from "./components/TypingOverlay";
+import WordListSection from "./components/WordListSection";
 import type { SpeechRecognitionLike } from "./lib/speech";
 import {
   extractTranscript,
@@ -566,361 +571,56 @@ const App = () => {
   return (
     <React.Fragment>
       <div className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
-        <div className="pointer-events-none absolute left-1/2 top-0 h-[420px] w-[680px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_top,_rgba(190,24,93,0.25),_transparent_70%)] blur-3xl" />
+        <div className="pointer-events-none absolute top-0 left-1/2 h-[420px] w-[680px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_top,_rgba(190,24,93,0.25),_transparent_70%)] blur-3xl" />
         <div className="pointer-events-none absolute bottom-[-120px] left-[-140px] h-[360px] w-[360px] rounded-full bg-[radial-gradient(circle,_rgba(14,116,144,0.25),_transparent_70%)] blur-3xl" />
-        <main className="relative mx-auto flex w-full max-w-none flex-col gap-8 px-6 pb-16 pt-10">
-          <header className="flex flex-wrap items-center justify-between gap-6">
-            <div className="flex flex-col gap-2">
-              <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-                KOKON
-              </h1>
-              <p className="max-w-2xl text-sm text-slate-300">
-                スペースを押して回答
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsOptionsOpen(true)}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-700 bg-slate-900/70 text-slate-200 transition hover:border-slate-500"
-              aria-label="オプションを開く"
-            >
-              <span className="flex flex-col gap-1">
-                <span className="h-0.5 w-5 rounded-full bg-current" />
-                <span className="h-0.5 w-5 rounded-full bg-current" />
-                <span className="h-0.5 w-5 rounded-full bg-current" />
-              </span>
-            </button>
-          </header>
-
-          <section className="grid gap-6">
-            <div className="flex flex-col gap-6">
-              <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-6 shadow-[0_0_50px_rgba(15,23,42,0.4)]">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div className="flex flex-col gap-2">
-                    <h2 className="text-lg font-semibold text-white">
-                      単語リスト
-                    </h2>
-                    <p className="text-sm text-slate-400">
-                      正解すると単語と画像が表示されます。
-                    </p>
-                  </div>
-                  <div
-                    className={`rounded-full border px-4 py-2 text-xs uppercase tracking-[0.3em] ${
-                      resultStatus === "correct"
-                        ? "border-emerald-400/60 text-emerald-300"
-                        : resultStatus === "incorrect"
-                          ? "border-rose-400/60 text-rose-300"
-                          : "border-slate-700 text-slate-400"
-                    }`}
-                  >
-                    {resultStatus === "correct"
-                      ? "Correct"
-                      : resultStatus === "incorrect"
-                        ? "Incorrect"
-                        : "Standby"}
-                  </div>
-                </div>
-
-                <div className="mt-6 grid items-start gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-                  {categories.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-slate-700 p-6 text-sm text-slate-400">
-                      単語データがありません。URLを入力して読み込んでください。
-                    </div>
-                  ) : (
-                    categories.map(([category, entries]) => (
-                      <div
-                        key={category}
-                        className="flex flex-col items-start gap-3"
-                      >
-                        <div className="flex h-8 w-full items-center justify-between">
-                          <div className="flex min-w-0 items-center gap-3">
-                            <span className="h-2 w-2 shrink-0 rounded-full bg-rose-400" />
-                            <h3 className="min-w-0 truncate whitespace-nowrap text-base font-semibold leading-none text-white">
-                              {category}
-                            </h3>
-                          </div>
-                          <span className="shrink-0 text-xs leading-none text-slate-500">
-                            {entries.length}語
-                          </span>
-                        </div>
-                        <div className="w-full overflow-hidden rounded-2xl">
-                          <table className="w-full border-separate border-spacing-0 rounded-2xl border border-slate-800 text-left text-sm">
-                            <thead className="bg-slate-900/70 text-xs uppercase tracking-[0.2em] text-slate-500">
-                              <tr>
-                                <th className="px-4 py-3">単語</th>
-                                <th className="px-4 py-3 text-right" />
-                                {hasAnyImage && (
-                                  <th className="px-4 py-3">画像</th>
-                                )}
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-800">
-                              {entries.map((entry) => {
-                                const isRevealed = revealedIds.has(entry.id);
-                                return (
-                                  <tr
-                                    key={entry.id}
-                                    ref={registerRowRef(entry.id)}
-                                    className={
-                                      highlightedIds.has(entry.id)
-                                        ? "bg-emerald-500/10"
-                                        : undefined
-                                    }
-                                  >
-                                    <td className="px-4 py-4 font-medium">
-                                      {isRevealed ? (
-                                        <span className="text-white">
-                                          {entry.word}
-                                        </span>
-                                      ) : (
-                                        <span className="text-slate-600">
-                                          •••••
-                                        </span>
-                                      )}
-                                    </td>
-                                    <td className="px-4 py-4 text-right text-slate-500">
-                                      {isRevealed ? entry.reading : ""}
-                                    </td>
-                                    {hasAnyImage && (
-                                      <td className="px-4 py-4">
-                                        {!showImages ? (
-                                          <span className="text-xs text-slate-600">
-                                            非表示
-                                          </span>
-                                        ) : !isRevealed ? (
-                                          <span className="text-xs text-slate-600">
-                                            ???
-                                          </span>
-                                        ) : entry.imageUrl ? (
-                                          <img
-                                            src={entry.imageUrl}
-                                            alt={entry.word}
-                                            className="h-14 w-20 rounded-lg object-cover"
-                                          />
-                                        ) : (
-                                          <span className="text-xs text-slate-500">
-                                            画像なし
-                                          </span>
-                                        )}
-                                      </td>
-                                    )}
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-          </section>
+        <main className="relative mx-auto flex w-full max-w-none flex-col gap-8 px-6 pt-10 pb-16">
+          <AppHeader onOpenOptions={() => setIsOptionsOpen(true)} />
+          <WordListSection
+            categories={categories}
+            resultStatus={resultStatus}
+            hasAnyImage={hasAnyImage}
+            showImages={showImages}
+            revealedIds={revealedIds}
+            highlightedIds={highlightedIds}
+            registerRowRef={registerRowRef}
+          />
         </main>
       </div>
-      {isTypingOpen && (
-        <div className="z-60 fixed inset-0 flex items-center justify-center bg-slate-950/75 px-6 backdrop-blur-sm">
-          <div className="w-full max-w-xl rounded-3xl border border-slate-700 bg-slate-900/90 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.6)]">
-            <div className="flex items-center justify-between">
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
-                Answer Input
-              </p>
-              <button
-                type="button"
-                onClick={closeTypingOverlay}
-                className="text-xs text-slate-400 transition hover:text-white"
-              >
-                閉じる
-              </button>
-            </div>
-            <div className="mt-3 rounded-2xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-xs text-slate-400">
-              {isSpeechEnabled ? (
-                isSpeechSupported ? (
-                  <span>
-                    {isPressing ? "Listening..." : "Ready"} /
-                    スペース長押しで音声入力
-                  </span>
-                ) : (
-                  "このブラウザでは音声認識が利用できません。"
-                )
-              ) : (
-                "音声認識はオプションで有効化できます。"
-              )}
-            </div>
-            <input
-              ref={typingInputRef}
-              value={typingValue}
-              onChange={(event) => setTypingValue(event.target.value)}
-              onKeyDown={handleTypingKeyDown}
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              spellCheck={false}
-              placeholder="ここに入力してEnterで確定"
-              className="mt-4 w-full rounded-2xl border border-slate-700 bg-slate-950/80 px-4 py-4 text-lg text-white placeholder:text-slate-600 focus:border-rose-400 focus:outline-none"
-            />
-            <p className="mt-3 text-xs text-slate-500">
-              おすすめ：IMEの設定で予測変換を無効にする
-            </p>
-          </div>
-        </div>
-      )}
-      {isPressing && isSpeechEnabled && isSpeechSupported && !isTypingOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-6 backdrop-blur-sm">
-          <div className="w-full max-w-xl rounded-3xl border border-slate-700 bg-slate-900/90 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.6)]">
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
-              Listening...
-            </p>
-            <p className="mt-4 text-lg font-semibold text-white">
-              {lastTranscript || "..."}
-            </p>
-            <p className="mt-2 text-xs text-slate-500">
-              スペースキーを離すと確定します。
-            </p>
-          </div>
-        </div>
-      )}
-      <button
-        type="button"
-        aria-label="オプションを閉じる"
-        className={`fixed inset-0 z-40 bg-slate-950/70 transition-opacity ${
-          isOptionsOpen
-            ? "pointer-events-auto opacity-100"
-            : "pointer-events-none opacity-0"
-        }`}
-        onClick={() => setIsOptionsOpen(false)}
+      <TypingOverlay
+        isOpen={isTypingOpen}
+        isSpeechEnabled={isSpeechEnabled}
+        isSpeechSupported={isSpeechSupported}
+        isPressing={isPressing}
+        typingValue={typingValue}
+        onChange={(event) => setTypingValue(event.target.value)}
+        onKeyDown={handleTypingKeyDown}
+        onClose={closeTypingOverlay}
+        inputRef={typingInputRef}
       />
-      <aside
-        className={`fixed right-0 top-0 z-50 h-full w-[320px] border-l border-slate-800 bg-slate-950/95 p-6 shadow-2xl transition-transform duration-300 ${
-          isOptionsOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-        aria-hidden={!isOptionsOpen}
-      >
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">設定・オプション</h2>
-          <button
-            type="button"
-            onClick={() => setIsOptionsOpen(false)}
-            className="text-xs text-slate-400 transition hover:text-white"
-          >
-            閉じる
-          </button>
-        </div>
-        <form className="mt-4 flex flex-col gap-3" onSubmit={handleLoad}>
-          <label
-            htmlFor="spreadsheet-url"
-            className="text-xs uppercase tracking-[0.2em] text-slate-500"
-          >
-            Spreadsheet URL
-          </label>
-          <input
-            id="spreadsheet-url"
-            type="url"
-            value={spreadsheetUrl}
-            onChange={(event) => setSpreadsheetUrl(event.target.value)}
-            placeholder="https://docs.google.com/spreadsheets/d/..."
-            className="rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-rose-400 focus:outline-none"
-          />
-          <button
-            type="submit"
-            className="rounded-2xl bg-rose-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:bg-slate-700"
-            disabled={isLoading}
-          >
-            {isLoading ? "読み込み中..." : "データを読み込む"}
-          </button>
-          <a
-            href={spreadsheetUrl || "#"}
-            target="_blank"
-            rel="noreferrer"
-            className={`rounded-2xl border border-slate-700 px-4 py-3 text-center text-sm font-semibold transition ${
-              spreadsheetUrl.trim()
-                ? "text-slate-200 hover:border-slate-500"
-                : "pointer-events-none text-slate-500"
-            }`}
-          >
-            データを開く
-          </a>
-          {loadError && (
-            <p className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
-              {loadError}
-            </p>
-          )}
-        </form>
-
-        <div className="mt-6 grid gap-4">
-          <div className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3">
-            <div>
-              <p className="text-sm text-white">画像の表示</p>
-              <p className="text-xs text-slate-500">
-                伏せ表示のときは ??? になります。
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowImages((prev) => !prev)}
-              className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
-                showImages
-                  ? "bg-emerald-400/20 text-emerald-200"
-                  : "bg-slate-800 text-slate-400"
-              }`}
-            >
-              {showImages ? "ON" : "OFF"}
-            </button>
-          </div>
-
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3">
-            <p className="text-sm text-white">回答状況をリセット</p>
-            <p className="text-xs text-slate-500">
-              単語の表示と判定状態を初期化します。
-            </p>
-            <button
-              type="button"
-              onClick={handleReset}
-              className="mt-3 w-full rounded-xl border border-slate-700 px-3 py-2 text-xs text-slate-300 transition hover:border-slate-500"
-            >
-              リセットする
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3">
-            <div>
-              <p className="text-sm text-white">音声認識</p>
-              <p className="text-xs text-slate-500">
-                スペースキーを押している間に認識します。
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsSpeechEnabled((prev) => !prev)}
-              className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
-                isSpeechEnabled
-                  ? "bg-emerald-400/20 text-emerald-200"
-                  : "bg-slate-800 text-slate-400"
-              }`}
-            >
-              {isSpeechEnabled ? "ON" : "OFF"}
-            </button>
-          </div>
-
-          {isSpeechEnabled && (
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3">
-              <p className="text-sm text-white">オンデバイス音声</p>
-              <p className="text-xs text-slate-500">状態: {onDeviceStatus}</p>
-              <button
-                type="button"
-                onClick={handlePrepareOnDevice}
-                className="mt-3 w-full rounded-xl border border-slate-700 px-3 py-2 text-xs text-slate-300 transition hover:border-slate-500 disabled:cursor-not-allowed"
-                disabled={onDeviceStatus === "installing"}
-              >
-                {onDeviceStatus === "installing"
-                  ? "準備中..."
-                  : "オンデバイス音声を準備"}
-              </button>
-            </div>
-          )}
-        </div>
-      </aside>
+      <ListeningOverlay
+        isVisible={
+          isPressing && isSpeechEnabled && isSpeechSupported && !isTypingOpen
+        }
+        lastTranscript={lastTranscript}
+      />
+      <OptionsDrawer
+        isOpen={isOptionsOpen}
+        onClose={() => setIsOptionsOpen(false)}
+        onLoad={handleLoad}
+        spreadsheetUrl={spreadsheetUrl}
+        onSpreadsheetUrlChange={(event) =>
+          setSpreadsheetUrl(event.target.value)
+        }
+        isLoading={isLoading}
+        loadError={loadError}
+        showImages={showImages}
+        onToggleShowImages={() => setShowImages((prev) => !prev)}
+        onReset={handleReset}
+        isSpeechEnabled={isSpeechEnabled}
+        onToggleSpeech={() => setIsSpeechEnabled((prev) => !prev)}
+        onPrepareOnDevice={handlePrepareOnDevice}
+        onDeviceStatus={onDeviceStatus}
+      />
     </React.Fragment>
   );
 };
