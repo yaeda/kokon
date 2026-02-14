@@ -34,22 +34,22 @@ const TypingOverlay = ({
   }
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-950/75 px-6 backdrop-blur-sm">
-      <div className="w-full max-w-xl rounded-3xl border border-slate-700 bg-slate-900/90 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.6)]">
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-950/75 px-6 backdrop-blur-sm group-data-[theme=light]:bg-slate-200/70">
+      <div className="w-full max-w-xl rounded-3xl border border-slate-700 bg-slate-900/90 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.6)] group-data-[theme=light]:border-slate-200 group-data-[theme=light]:bg-white">
         <div className="flex items-center justify-between">
-          <p className="text-xs tracking-[0.3em] text-slate-400 uppercase">
+          <p className="text-xs tracking-[0.3em] text-slate-400 uppercase group-data-[theme=light]:text-slate-500">
             Answer Input
           </p>
           <button
             type="button"
             onClick={onClose}
-            className="text-xs text-slate-400 transition hover:text-white"
+            className="text-xs text-slate-400 transition hover:text-white group-data-[theme=light]:text-slate-500 group-data-[theme=light]:hover:text-slate-700"
           >
             閉じる
           </button>
         </div>
         {!isMobile && (
-          <div className="mt-3 rounded-2xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-xs text-slate-400">
+          <div className="mt-3 rounded-2xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-xs text-slate-400 group-data-[theme=light]:border-slate-200 group-data-[theme=light]:bg-slate-50 group-data-[theme=light]:text-slate-500">
             {isSpeechEnabled ? (
               isSpeechSupported ? (
                 <span>
@@ -74,9 +74,9 @@ const TypingOverlay = ({
           autoCapitalize="off"
           spellCheck={false}
           placeholder="ここに入力してEnterで確定"
-          className="mt-4 w-full rounded-2xl border border-slate-700 bg-slate-950/80 px-4 py-4 text-lg text-white placeholder:text-slate-600 focus:border-rose-400 focus:outline-none"
+          className="mt-4 w-full rounded-2xl border border-slate-700 bg-slate-950/80 px-4 py-4 text-lg text-white placeholder:text-slate-600 focus:border-rose-400 focus:outline-none group-data-[theme=light]:border-slate-200 group-data-[theme=light]:bg-slate-50 group-data-[theme=light]:text-slate-900 group-data-[theme=light]:placeholder:text-slate-400"
         />
-        <p className="mt-3 text-xs text-slate-500">
+        <p className="mt-3 text-xs text-slate-500 group-data-[theme=light]:text-slate-500">
           おすすめ：IMEの設定で予測変換を無効にする
         </p>
       </div>

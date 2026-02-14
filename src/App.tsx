@@ -1,7 +1,7 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import * as React from "react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import AppHeader from "./components/AppHeader";
 import ListeningOverlay from "./components/ListeningOverlay";
@@ -30,7 +30,7 @@ import {
   typingValueAtom,
   wordsAtom
 } from "./state/app";
-import { speechEnabledAtom } from "./state/options";
+import { speechEnabledAtom, themeAtom } from "./state/options";
 import { spreadsheetUrlAtom } from "./state/spreadsheet";
 
 type ResultTone = "correct" | "correct_again" | "incorrect";
@@ -41,6 +41,8 @@ const App = () => {
   const [, setHighlightedIds] = useAtom(highlightedIdsAtom);
   const [, setLoadError] = useAtom(loadErrorAtom);
   const isSpeechEnabled = useAtomValue(speechEnabledAtom);
+  const theme = useAtomValue(themeAtom);
+  const [systemTheme, setSystemTheme] = useState<"dark" | "light">("dark");
   const [typingValue, setTypingValue] = useAtom(typingValueAtom);
   const [isTypingOpen, setIsTypingOpen] = useAtom(isTypingOpenAtom);
   const [, setLastTranscript] = useAtom(lastTranscriptAtom);
@@ -77,6 +79,29 @@ const App = () => {
       timers.clear();
     };
   }, []);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const updateTheme = () => {
+      setSystemTheme(mediaQuery.matches ? "dark" : "light");
+    };
+
+    updateTheme();
+    mediaQuery.addEventListener("change", updateTheme);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updateTheme);
+    };
+  }, []);
+
+  const resolvedTheme = useMemo(
+    () => (theme === "system" ? systemTheme : theme),
+    [systemTheme, theme]
+  );
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = resolvedTheme;
+  }, [resolvedTheme]);
 
   useEffect(() => {
     if (!isTypingOpen) {
@@ -522,10 +547,10 @@ const App = () => {
   ]);
 
   return (
-    <React.Fragment>
-      <div className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
-        <div className="pointer-events-none absolute top-0 left-1/2 h-105 w-170 -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_top,rgba(190,24,93,0.25),transparent_70%)] blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-30 -left-35 h-90 w-90 rounded-full bg-[radial-gradient(circle,rgba(14,116,144,0.25),transparent_70%)] blur-3xl" />
+    <div data-theme={resolvedTheme} className="group">
+      <div className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100 group-data-[theme=light]:bg-slate-50 group-data-[theme=light]:text-slate-900">
+        <div className="pointer-events-none absolute top-0 left-1/2 h-105 w-170 -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_top,rgba(190,24,93,0.25),transparent_70%)] blur-3xl group-data-[theme=light]:bg-[radial-gradient(circle_at_top,rgba(244,63,94,0.18),transparent_70%)]" />
+        <div className="pointer-events-none absolute -bottom-30 -left-35 h-90 w-90 rounded-full bg-[radial-gradient(circle,rgba(14,116,144,0.25),transparent_70%)] blur-3xl group-data-[theme=light]:bg-[radial-gradient(circle,rgba(56,189,248,0.18),transparent_70%)]" />
         <main className="relative mx-auto flex w-full max-w-none flex-col gap-8 px-6 pt-10 pb-16">
           <AppHeader />
           <WordListSection />
@@ -537,7 +562,7 @@ const App = () => {
           setIsTypingOpen(true);
           setTypingValue("");
         }}
-        className="fixed bottom-6 right-6 z-30 flex h-12 w-12 items-center justify-center rounded-full border border-slate-700 bg-slate-900/80 text-sm font-semibold text-white shadow-lg transition hover:border-slate-500 md:hidden"
+        className="fixed bottom-6 right-6 z-30 flex h-12 w-12 items-center justify-center rounded-full border border-slate-700 bg-slate-900/80 text-sm font-semibold text-white shadow-lg transition hover:border-slate-500 group-data-[theme=light]:border-slate-200 group-data-[theme=light]:bg-white group-data-[theme=light]:text-slate-700 group-data-[theme=light]:hover:border-slate-300 md:hidden"
         aria-label="入力を開く"
       >
         入力
@@ -549,7 +574,7 @@ const App = () => {
       />
       <ListeningOverlay />
       <OptionsDrawer />
-    </React.Fragment>
+    </div>
   );
 };
 

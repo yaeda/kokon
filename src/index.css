@@ -18,6 +18,15 @@ body {
   color: #e2e8f0;
 }
 
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="light"] body {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
 * {
   box-sizing: border-box;
 }
