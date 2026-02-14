@@ -1,0 +1,25 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  font-family:
+    "Space Grotesk",
+    "IBM Plex Sans",
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+body {
+  margin: 0;
+  background-color: #05070f;
+  color: #e2e8f0;
+}
+
+* {
+  box-sizing: border-box;
+}
