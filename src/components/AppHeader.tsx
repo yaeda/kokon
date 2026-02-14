@@ -1,8 +1,10 @@
-type AppHeaderProps = {
-  onOpenOptions: () => void;
-};
+import { useSetAtom } from "jotai";
+import * as React from "react";
+import { isOptionsOpenAtom } from "../state/app";
 
-const AppHeader = ({ onOpenOptions }: AppHeaderProps) => {
+const AppHeader = () => {
+  const setIsOptionsOpen = useSetAtom(isOptionsOpenAtom);
+
   return (
     <header className="flex flex-wrap items-center justify-between gap-6">
       <div className="flex flex-col gap-2">
@@ -13,7 +15,7 @@ const AppHeader = ({ onOpenOptions }: AppHeaderProps) => {
       </div>
       <button
         type="button"
-        onClick={onOpenOptions}
+        onClick={() => setIsOptionsOpen(true)}
         className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-700 bg-slate-900/70 text-slate-200 transition hover:border-slate-500"
         aria-label="オプションを開く"
       >
@@ -27,4 +29,4 @@ const AppHeader = ({ onOpenOptions }: AppHeaderProps) => {
   );
 };
 
-export default AppHeader;
+export default React.memo(AppHeader);

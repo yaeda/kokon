@@ -1,26 +1,53 @@
-import type { WordEntry } from "../lib/spreadsheet";
+import { useAtomValue } from "jotai";
+import * as React from "react";
+import {
+  categoriesAtom,
+  hasAnyImageAtom,
+  highlightedIdsAtom,
+  resultStatusAtom,
+  revealedIdsAtom,
+  showImagesAtom
+} from "../state/app";
 
-type ResultStatus = "idle" | "correct" | "incorrect";
+const WordListSection = () => {
+  const categories = useAtomValue(categoriesAtom);
+  const resultStatus = useAtomValue(resultStatusAtom);
+  const hasAnyImage = useAtomValue(hasAnyImageAtom);
+  const showImages = useAtomValue(showImagesAtom);
+  const revealedIds = useAtomValue(revealedIdsAtom);
+  const highlightedIds = useAtomValue(highlightedIdsAtom);
+  const rowRefs = React.useRef<Map<string, HTMLTableRowElement>>(new Map());
+  const previousHighlightedRef = React.useRef<Set<string>>(new Set());
 
-type WordListSectionProps = {
-  categories: Array<[string, WordEntry[]]>;
-  resultStatus: ResultStatus;
-  hasAnyImage: boolean;
-  showImages: boolean;
-  revealedIds: Set<string>;
-  highlightedIds: Set<string>;
-  registerRowRef: (id: string) => (node: HTMLTableRowElement | null) => void;
-};
+  const registerRowRef = React.useCallback(
+    (id: string) => (node: HTMLTableRowElement | null) => {
+      if (!node) {
+        rowRefs.current.delete(id);
+        return;
+      }
+      rowRefs.current.set(id, node);
+    },
+    []
+  );
 
-const WordListSection = ({
-  categories,
-  resultStatus,
-  hasAnyImage,
-  showImages,
-  revealedIds,
-  highlightedIds,
-  registerRowRef
-}: WordListSectionProps) => {
+  React.useEffect(() => {
+    const previous = previousHighlightedRef.current;
+    let targetId: string | undefined;
+    for (const id of highlightedIds) {
+      if (!previous.has(id)) {
+        targetId = id;
+        break;
+      }
+    }
+    if (targetId) {
+      const target = rowRefs.current.get(targetId);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+    previousHighlightedRef.current = new Set(highlightedIds);
+  }, [highlightedIds]);
+
   return (
     <section className="grid gap-6">
       <div className="flex flex-col gap-6">
@@ -141,4 +168,4 @@ const WordListSection = ({
   );
 };
 
-export default WordListSection;
+export default React.memo(WordListSection);

@@ -1,45 +1,37 @@
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import * as React from "react";
+import {
+  loadSpreadsheetAtom,
+  prepareOnDeviceAtom,
+  resetAnswersAtom
+} from "../state/actions";
+import {
+  isLoadingAtom,
+  isOptionsOpenAtom,
+  loadErrorAtom,
+  onDeviceStatusAtom,
+  showImagesAtom
+} from "../state/app";
+import { speechEnabledAtom } from "../state/options";
+import { spreadsheetUrlAtom } from "../state/spreadsheet";
 
-type OnDeviceStatus =
-  | "unknown"
-  | "available"
-  | "unavailable"
-  | "downloading"
-  | "installing";
+const OptionsDrawer = () => {
+  const [isOpen, setIsOpen] = useAtom(isOptionsOpenAtom);
+  const [spreadsheetUrl, setSpreadsheetUrl] = useAtom(spreadsheetUrlAtom);
+  const isLoading = useAtomValue(isLoadingAtom);
+  const loadError = useAtomValue(loadErrorAtom);
+  const [showImages, setShowImages] = useAtom(showImagesAtom);
+  const [isSpeechEnabled, setIsSpeechEnabled] = useAtom(speechEnabledAtom);
+  const onDeviceStatus = useAtomValue(onDeviceStatusAtom);
+  const loadSpreadsheet = useSetAtom(loadSpreadsheetAtom);
+  const resetAnswers = useSetAtom(resetAnswersAtom);
+  const prepareOnDevice = useSetAtom(prepareOnDeviceAtom);
 
-type OptionsDrawerProps = {
-  isOpen: boolean;
-  onClose: () => void;
-  onLoad: React.FormEventHandler<HTMLFormElement>;
-  spreadsheetUrl: string;
-  onSpreadsheetUrlChange: React.ChangeEventHandler<HTMLInputElement>;
-  isLoading: boolean;
-  loadError: string | null;
-  showImages: boolean;
-  onToggleShowImages: () => void;
-  onReset: () => void;
-  isSpeechEnabled: boolean;
-  onToggleSpeech: () => void;
-  onPrepareOnDevice: () => void;
-  onDeviceStatus: OnDeviceStatus;
-};
+  const handleLoad: React.FormEventHandler<HTMLFormElement> = (event) => {
+    event.preventDefault();
+    loadSpreadsheet(spreadsheetUrl);
+  };
 
-const OptionsDrawer = ({
-  isOpen,
-  onClose,
-  onLoad,
-  spreadsheetUrl,
-  onSpreadsheetUrlChange,
-  isLoading,
-  loadError,
-  showImages,
-  onToggleShowImages,
-  onReset,
-  isSpeechEnabled,
-  onToggleSpeech,
-  onPrepareOnDevice,
-  onDeviceStatus
-}: OptionsDrawerProps) => {
   return (
     <React.Fragment>
       <button
@@ -50,7 +42,7 @@ const OptionsDrawer = ({
             ? "pointer-events-auto opacity-100"
             : "pointer-events-none opacity-0"
         }`}
-        onClick={onClose}
+        onClick={() => setIsOpen(false)}
       />
       <aside
         className={`fixed top-0 right-0 z-50 h-full w-[320px] border-l border-slate-800 bg-slate-950/95 p-6 shadow-2xl transition-transform duration-300 ${
@@ -62,13 +54,13 @@ const OptionsDrawer = ({
           <h2 className="text-lg font-semibold text-white">設定・オプション</h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => setIsOpen(false)}
             className="text-xs text-slate-400 transition hover:text-white"
           >
             閉じる
           </button>
         </div>
-        <form className="mt-4 flex flex-col gap-3" onSubmit={onLoad}>
+        <form className="mt-4 flex flex-col gap-3" onSubmit={handleLoad}>
           <label
             htmlFor="spreadsheet-url"
             className="text-xs tracking-[0.2em] text-slate-500 uppercase"
@@ -79,7 +71,7 @@ const OptionsDrawer = ({
             id="spreadsheet-url"
             type="url"
             value={spreadsheetUrl}
-            onChange={onSpreadsheetUrlChange}
+            onChange={(event) => setSpreadsheetUrl(event.target.value)}
             placeholder="https://docs.google.com/spreadsheets/d/..."
             className="rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-rose-400 focus:outline-none"
           />
@@ -119,7 +111,7 @@ const OptionsDrawer = ({
             </div>
             <button
               type="button"
-              onClick={onToggleShowImages}
+              onClick={() => setShowImages((prev) => !prev)}
               className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
                 showImages
                   ? "bg-emerald-400/20 text-emerald-200"
@@ -137,7 +129,7 @@ const OptionsDrawer = ({
             </p>
             <button
               type="button"
-              onClick={onReset}
+              onClick={() => resetAnswers()}
               className="mt-3 w-full rounded-xl border border-slate-700 px-3 py-2 text-xs text-slate-300 transition hover:border-slate-500"
             >
               リセットする
@@ -153,7 +145,7 @@ const OptionsDrawer = ({
             </div>
             <button
               type="button"
-              onClick={onToggleSpeech}
+              onClick={() => setIsSpeechEnabled((prev) => !prev)}
               className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
                 isSpeechEnabled
                   ? "bg-emerald-400/20 text-emerald-200"
@@ -170,7 +162,7 @@ const OptionsDrawer = ({
               <p className="text-xs text-slate-500">状態: {onDeviceStatus}</p>
               <button
                 type="button"
-                onClick={onPrepareOnDevice}
+                onClick={() => prepareOnDevice()}
                 className="mt-3 w-full rounded-xl border border-slate-700 px-3 py-2 text-xs text-slate-300 transition hover:border-slate-500 disabled:cursor-not-allowed"
                 disabled={onDeviceStatus === "installing"}
               >
@@ -186,4 +178,4 @@ const OptionsDrawer = ({
   );
 };
 
-export default OptionsDrawer;
+export default React.memo(OptionsDrawer);

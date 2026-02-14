@@ -1,28 +1,31 @@
+import { useAtomValue, useSetAtom } from "jotai";
 import * as React from "react";
+import {
+  isPressingAtom,
+  isTypingOpenAtom,
+  speechSupportedAtom,
+  typingValueAtom
+} from "../state/app";
+import { speechEnabledAtom } from "../state/options";
 
 type TypingOverlayProps = {
-  isOpen: boolean;
-  isSpeechEnabled: boolean;
-  isSpeechSupported: boolean;
-  isPressing: boolean;
-  typingValue: string;
-  onChange: React.ChangeEventHandler<HTMLInputElement>;
   onKeyDown: React.KeyboardEventHandler<HTMLInputElement>;
   onClose: () => void;
   inputRef: React.RefObject<HTMLInputElement>;
 };
 
 const TypingOverlay = ({
-  isOpen,
-  isSpeechEnabled,
-  isSpeechSupported,
-  isPressing,
-  typingValue,
-  onChange,
   onKeyDown,
   onClose,
   inputRef
 }: TypingOverlayProps) => {
+  const isOpen = useAtomValue(isTypingOpenAtom);
+  const isSpeechEnabled = useAtomValue(speechEnabledAtom);
+  const isSpeechSupported = useAtomValue(speechSupportedAtom);
+  const isPressing = useAtomValue(isPressingAtom);
+  const typingValue = useAtomValue(typingValueAtom);
+  const setTypingValue = useSetAtom(typingValueAtom);
+
   if (!isOpen) {
     return null;
   }
@@ -59,7 +62,7 @@ const TypingOverlay = ({
         <input
           ref={inputRef}
           value={typingValue}
-          onChange={onChange}
+          onChange={(event) => setTypingValue(event.target.value)}
           onKeyDown={onKeyDown}
           autoComplete="off"
           autoCorrect="off"
@@ -76,4 +79,4 @@ const TypingOverlay = ({
   );
 };
 
-export default TypingOverlay;
+export default React.memo(TypingOverlay);

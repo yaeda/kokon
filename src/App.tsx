@@ -1,7 +1,7 @@
-import { useAtom } from "jotai";
-import type { FormEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import * as React from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { flushSync } from "react-dom";
 import AppHeader from "./components/AppHeader";
 import ListeningOverlay from "./components/ListeningOverlay";
@@ -15,43 +15,47 @@ import {
   getSpeechRecognitionStatic
 } from "./lib/speech";
 import type { WordEntry } from "./lib/spreadsheet";
+import { normalizeReading } from "./lib/spreadsheet";
+import { closeTypingOverlayAtom, loadSpreadsheetAtom } from "./state/actions";
 import {
-  buildSpreadsheetCsvUrl,
-  normalizeReading,
-  parseSpreadsheetCsv
-} from "./lib/spreadsheet";
+  highlightedIdsAtom,
+  isListeningAtom,
+  isPressingAtom,
+  isTypingOpenAtom,
+  lastTranscriptAtom,
+  loadErrorAtom,
+  onDeviceStatusAtom,
+  resultStatusAtom,
+  revealedIdsAtom,
+  typingValueAtom,
+  wordsAtom
+} from "./state/app";
 import { speechEnabledAtom } from "./state/options";
 import { spreadsheetUrlAtom } from "./state/spreadsheet";
 
 type ResultTone = "correct" | "incorrect";
-type ResultStatus = "idle" | "correct" | "incorrect";
-
 const App = () => {
-  const [spreadsheetUrl, setSpreadsheetUrl] = useAtom(spreadsheetUrlAtom);
-  const [words, setWords] = useState<WordEntry[]>([]);
-  const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
-  const [showImages, setShowImages] = useState(true);
-  const [isOptionsOpen, setIsOptionsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [isSpeechEnabled, setIsSpeechEnabled] = useAtom(speechEnabledAtom);
-  const [typingValue, setTypingValue] = useState("");
-  const [isTypingOpen, setIsTypingOpen] = useState(false);
-  const [lastTranscript, setLastTranscript] = useState("");
-  const [resultStatus, setResultStatus] = useState<ResultStatus>("idle");
-  const [isListening, setIsListening] = useState(false);
-  const [isPressing, setIsPressing] = useState(false);
-  const [onDeviceStatus, setOnDeviceStatus] = useState<
-    "unknown" | "available" | "unavailable" | "downloading" | "installing"
-  >("unknown");
-  const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
+  const spreadsheetUrl = useAtomValue(spreadsheetUrlAtom);
+  const words = useAtomValue(wordsAtom);
+  const [revealedIds, setRevealedIds] = useAtom(revealedIdsAtom);
+  const [, setHighlightedIds] = useAtom(highlightedIdsAtom);
+  const [, setLoadError] = useAtom(loadErrorAtom);
+  const isSpeechEnabled = useAtomValue(speechEnabledAtom);
+  const [typingValue, setTypingValue] = useAtom(typingValueAtom);
+  const [isTypingOpen, setIsTypingOpen] = useAtom(isTypingOpenAtom);
+  const [, setLastTranscript] = useAtom(lastTranscriptAtom);
+  const setResultStatus = useSetAtom(resultStatusAtom);
+  const [isListening, setIsListening] = useAtom(isListeningAtom);
+  const [isPressing, setIsPressing] = useAtom(isPressingAtom);
+  const [, setOnDeviceStatus] = useAtom(onDeviceStatusAtom);
+  const closeTypingOverlay = useSetAtom(closeTypingOverlayAtom);
+  const loadSpreadsheet = useSetAtom(loadSpreadsheetAtom);
 
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const lastTranscriptRef = useRef("");
   const lastFinalTranscriptRef = useRef("");
   const correctAudioRef = useRef<HTMLAudioElement | null>(null);
   const incorrectAudioRef = useRef<HTMLAudioElement | null>(null);
-  const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map());
   const highlightTimersRef = useRef<Map<string, number>>(new Map());
   const isPressingRef = useRef(false);
   const restartTimerRef = useRef<number | null>(null);
@@ -64,11 +68,12 @@ const App = () => {
   const isSpeechSupported = Boolean(speechConstructor);
 
   useEffect(() => {
+    const timers = highlightTimersRef.current;
     return () => {
-      highlightTimersRef.current.forEach((timerId) => {
+      timers.forEach((timerId) => {
         window.clearTimeout(timerId);
       });
-      highlightTimersRef.current.clear();
+      timers.clear();
     };
   }, []);
 
@@ -102,40 +107,7 @@ const App = () => {
       .catch(() => {
         setOnDeviceStatus("unavailable");
       });
-  }, [isSpeechEnabled]);
-
-  const handlePrepareOnDevice = () => {
-    const speechStatic = getSpeechRecognitionStatic();
-    if (!speechStatic?.install) {
-      setOnDeviceStatus("unavailable");
-      return;
-    }
-
-    setOnDeviceStatus("installing");
-    speechStatic
-      .install({ langs: ["ja-JP"], processLocally: true })
-      .then((installed) => {
-        setOnDeviceStatus(installed ? "available" : "unavailable");
-      })
-      .catch(() => {
-        setOnDeviceStatus("unavailable");
-      });
-  };
-
-  const categories = useMemo(() => {
-    const grouped = new Map<string, WordEntry[]>();
-    for (const word of words) {
-      const items = grouped.get(word.category) ?? [];
-      items.push(word);
-      grouped.set(word.category, items);
-    }
-    return Array.from(grouped.entries());
-  }, [words]);
-
-  const hasAnyImage = useMemo(
-    () => words.some((entry) => Boolean(entry.imageUrl)),
-    [words]
-  );
+  }, [isSpeechEnabled, setOnDeviceStatus]);
 
   const playTone = useCallback((tone: ResultTone) => {
     const audioRef = tone === "correct" ? correctAudioRef : incorrectAudioRef;
@@ -157,7 +129,7 @@ const App = () => {
         (entry) => !revealedIds.has(entry.id)
       );
 
-      setRevealedIds((prev) => {
+      setRevealedIds((prev: Set<string>) => {
         const next = new Set(prev);
         matchedWords.forEach((entry) => next.add(entry.id));
         return next;
@@ -167,7 +139,7 @@ const App = () => {
         return;
       }
 
-      setHighlightedIds((prev) => {
+      setHighlightedIds((prev: Set<string>) => {
         const next = new Set(prev);
         newlyRevealed.forEach((entry) => {
           next.add(entry.id);
@@ -177,7 +149,7 @@ const App = () => {
           }
           const timerId = window.setTimeout(() => {
             highlightTimersRef.current.delete(entry.id);
-            setHighlightedIds((current) => {
+            setHighlightedIds((current: Set<string>) => {
               const updated = new Set(current);
               updated.delete(entry.id);
               return updated;
@@ -187,37 +159,20 @@ const App = () => {
         });
         return next;
       });
-
-      const target = rowRefs.current.get(newlyRevealed[0]?.id ?? "");
-      if (target) {
-        window.setTimeout(() => {
-          target.scrollIntoView({ behavior: "smooth", block: "center" });
-        }, 0);
-      }
     },
-    [revealedIds]
+    [revealedIds, setHighlightedIds, setRevealedIds]
   );
 
-  const registerRowRef = useCallback(
-    (id: string) => (node: HTMLTableRowElement | null) => {
-      if (!node) {
-        rowRefs.current.delete(id);
-        return;
-      }
-      rowRefs.current.set(id, node);
-    },
-    []
-  );
-
-  const closeTypingOverlay = useCallback(() => {
-    setIsTypingOpen(false);
-    setTypingValue("");
+  useEffect(() => {
+    if (isTypingOpen) {
+      return;
+    }
     spacePressedRef.current = false;
     if (spaceHoldTimerRef.current !== null) {
       window.clearTimeout(spaceHoldTimerRef.current);
       spaceHoldTimerRef.current = null;
     }
-  }, []);
+  }, [isTypingOpen]);
 
   const handleCheckAnswer = useCallback(
     (transcript: string) => {
@@ -254,6 +209,9 @@ const App = () => {
       isTypingOpen,
       playTone,
       revealWords,
+      setIsListening,
+      setIsPressing,
+      setResultStatus,
       words
     ]
   );
@@ -269,7 +227,7 @@ const App = () => {
       return;
     }
     recognitionRef.current.stop();
-  }, []);
+  }, [setIsPressing]);
 
   useEffect(() => {
     if (!isSpeechEnabled && isListening) {
@@ -364,16 +322,16 @@ const App = () => {
       isListening,
       isSpeechEnabled,
       playTone,
+      setIsListening,
+      setIsPressing,
+      setLastTranscript,
+      setLoadError,
+      setResultStatus,
+      setTypingValue,
       speechConstructor,
       words
     ]
   );
-
-  const handleReset = () => {
-    setRevealedIds(new Set());
-    setLastTranscript("");
-    setResultStatus("idle");
-  };
 
   const handleTypedSubmit = useCallback(() => {
     const rawInput = typingValue.trim();
@@ -392,7 +350,14 @@ const App = () => {
     closeTypingOverlay();
 
     handleCheckAnswer(rawInput);
-  }, [closeTypingOverlay, handleCheckAnswer, typingValue, words.length]);
+  }, [
+    closeTypingOverlay,
+    handleCheckAnswer,
+    setLoadError,
+    setResultStatus,
+    typingValue,
+    words.length
+  ]);
 
   const handleTypingKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLInputElement>) => {
@@ -408,43 +373,6 @@ const App = () => {
     },
     [closeTypingOverlay, handleTypedSubmit]
   );
-
-  const loadSpreadsheet = useCallback(async (inputUrl: string) => {
-    setIsLoading(true);
-    setLoadError(null);
-
-    try {
-      const csvUrl = buildSpreadsheetCsvUrl(inputUrl);
-      if (!csvUrl) {
-        throw new Error("URLを入力してください。");
-      }
-
-      const response = await fetch(csvUrl);
-      if (!response.ok) {
-        throw new Error("スプレッドシートの取得に失敗しました。");
-      }
-
-      const text = await response.text();
-      const entries = parseSpreadsheetCsv(text);
-      if (entries.length === 0) {
-        throw new Error("読み込める単語がありません。");
-      }
-
-      setWords(entries);
-      setRevealedIds(new Set());
-      setResultStatus("idle");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "読み込みエラー";
-      setLoadError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const handleLoad = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    void loadSpreadsheet(spreadsheetUrl);
-  };
 
   useEffect(() => {
     if (hasAutoLoadedRef.current) {
@@ -559,13 +487,15 @@ const App = () => {
       window.removeEventListener("keyup", handleKeyUp);
     };
   }, [
+    closeTypingOverlay,
+    handleTypedSubmit,
     isSpeechEnabled,
     isSpeechSupported,
     isTypingOpen,
+    setIsTypingOpen,
+    setTypingValue,
     startRecognition,
-    stopRecognition,
-    closeTypingOverlay,
-    handleTypedSubmit
+    stopRecognition
   ]);
 
   return (
@@ -574,53 +504,17 @@ const App = () => {
         <div className="pointer-events-none absolute top-0 left-1/2 h-[420px] w-[680px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_top,_rgba(190,24,93,0.25),_transparent_70%)] blur-3xl" />
         <div className="pointer-events-none absolute bottom-[-120px] left-[-140px] h-[360px] w-[360px] rounded-full bg-[radial-gradient(circle,_rgba(14,116,144,0.25),_transparent_70%)] blur-3xl" />
         <main className="relative mx-auto flex w-full max-w-none flex-col gap-8 px-6 pt-10 pb-16">
-          <AppHeader onOpenOptions={() => setIsOptionsOpen(true)} />
-          <WordListSection
-            categories={categories}
-            resultStatus={resultStatus}
-            hasAnyImage={hasAnyImage}
-            showImages={showImages}
-            revealedIds={revealedIds}
-            highlightedIds={highlightedIds}
-            registerRowRef={registerRowRef}
-          />
+          <AppHeader />
+          <WordListSection />
         </main>
       </div>
       <TypingOverlay
-        isOpen={isTypingOpen}
-        isSpeechEnabled={isSpeechEnabled}
-        isSpeechSupported={isSpeechSupported}
-        isPressing={isPressing}
-        typingValue={typingValue}
-        onChange={(event) => setTypingValue(event.target.value)}
         onKeyDown={handleTypingKeyDown}
         onClose={closeTypingOverlay}
         inputRef={typingInputRef}
       />
-      <ListeningOverlay
-        isVisible={
-          isPressing && isSpeechEnabled && isSpeechSupported && !isTypingOpen
-        }
-        lastTranscript={lastTranscript}
-      />
-      <OptionsDrawer
-        isOpen={isOptionsOpen}
-        onClose={() => setIsOptionsOpen(false)}
-        onLoad={handleLoad}
-        spreadsheetUrl={spreadsheetUrl}
-        onSpreadsheetUrlChange={(event) =>
-          setSpreadsheetUrl(event.target.value)
-        }
-        isLoading={isLoading}
-        loadError={loadError}
-        showImages={showImages}
-        onToggleShowImages={() => setShowImages((prev) => !prev)}
-        onReset={handleReset}
-        isSpeechEnabled={isSpeechEnabled}
-        onToggleSpeech={() => setIsSpeechEnabled((prev) => !prev)}
-        onPrepareOnDevice={handlePrepareOnDevice}
-        onDeviceStatus={onDeviceStatus}
-      />
+      <ListeningOverlay />
+      <OptionsDrawer />
     </React.Fragment>
   );
 };

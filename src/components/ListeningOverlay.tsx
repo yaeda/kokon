@@ -1,12 +1,11 @@
-type ListeningOverlayProps = {
-  isVisible: boolean;
-  lastTranscript: string;
-};
+import { useAtomValue } from "jotai";
+import * as React from "react";
+import { lastTranscriptAtom, listeningOverlayVisibleAtom } from "../state/app";
 
-const ListeningOverlay = ({
-  isVisible,
-  lastTranscript
-}: ListeningOverlayProps) => {
+const ListeningOverlay = () => {
+  const isVisible = useAtomValue(listeningOverlayVisibleAtom);
+  const lastTranscript = useAtomValue(lastTranscriptAtom);
+
   if (!isVisible) {
     return null;
   }
@@ -28,4 +27,4 @@ const ListeningOverlay = ({
   );
 };
 
-export default ListeningOverlay;
+export default React.memo(ListeningOverlay);
