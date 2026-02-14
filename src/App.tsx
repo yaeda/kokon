@@ -33,7 +33,7 @@ import {
 import { speechEnabledAtom } from "./state/options";
 import { spreadsheetUrlAtom } from "./state/spreadsheet";
 
-type ResultTone = "correct" | "incorrect";
+type ResultTone = "correct" | "correct_again" | "incorrect";
 const App = () => {
   const spreadsheetUrl = useAtomValue(spreadsheetUrlAtom);
   const words = useAtomValue(wordsAtom);
@@ -55,6 +55,7 @@ const App = () => {
   const lastTranscriptRef = useRef("");
   const lastFinalTranscriptRef = useRef("");
   const correctAudioRef = useRef<HTMLAudioElement | null>(null);
+  const correctAgainAudioRef = useRef<HTMLAudioElement | null>(null);
   const incorrectAudioRef = useRef<HTMLAudioElement | null>(null);
   const highlightTimersRef = useRef<Map<string, number>>(new Map());
   const isPressingRef = useRef(false);
@@ -110,9 +111,18 @@ const App = () => {
   }, [isSpeechEnabled, setOnDeviceStatus]);
 
   const playTone = useCallback((tone: ResultTone) => {
-    const audioRef = tone === "correct" ? correctAudioRef : incorrectAudioRef;
+    const audioRef =
+      tone === "correct"
+        ? correctAudioRef
+        : tone === "correct_again"
+          ? correctAgainAudioRef
+          : incorrectAudioRef;
     const src =
-      tone === "correct" ? "/sounds/correct.mp3" : "/sounds/incorrect.mp3";
+      tone === "correct"
+        ? "/sounds/correct.mp3"
+        : tone === "correct_again"
+          ? "/sounds/correct_again.mp3"
+          : "/sounds/incorrect.mp3";
 
     if (!audioRef.current) {
       audioRef.current = new Audio(src);
@@ -135,30 +145,39 @@ const App = () => {
         return next;
       });
 
-      if (newlyRevealed.length === 0) {
-        return;
+      const highlightTargets =
+        newlyRevealed.length > 0 ? newlyRevealed : matchedWords;
+
+      if (highlightTargets.length > 0) {
+        setHighlightedIds((prev: Set<string>) => {
+          const next = new Set(prev);
+          highlightTargets.forEach((entry) => {
+            next.add(entry.id);
+            const existingTimer = highlightTimersRef.current.get(entry.id);
+            if (existingTimer !== undefined) {
+              window.clearTimeout(existingTimer);
+            }
+            const timerId = window.setTimeout(() => {
+              highlightTimersRef.current.delete(entry.id);
+              setHighlightedIds((current: Set<string>) => {
+                const updated = new Set(current);
+                updated.delete(entry.id);
+                return updated;
+              });
+            }, 3000);
+            highlightTimersRef.current.set(entry.id, timerId);
+          });
+          return next;
+        });
       }
 
-      setHighlightedIds((prev: Set<string>) => {
-        const next = new Set(prev);
-        newlyRevealed.forEach((entry) => {
-          next.add(entry.id);
-          const existingTimer = highlightTimersRef.current.get(entry.id);
-          if (existingTimer !== undefined) {
-            window.clearTimeout(existingTimer);
-          }
-          const timerId = window.setTimeout(() => {
-            highlightTimersRef.current.delete(entry.id);
-            setHighlightedIds((current: Set<string>) => {
-              const updated = new Set(current);
-              updated.delete(entry.id);
-              return updated;
-            });
-          }, 3000);
-          highlightTimersRef.current.set(entry.id, timerId);
-        });
-        return next;
-      });
+      const targetId = newlyRevealed[0]?.id ?? matchedWords[0]?.id;
+      if (targetId) {
+        window.setTimeout(() => {
+          const target = document.getElementById(`word-row-${targetId}`);
+          target?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 0);
+      }
     },
     [revealedIds, setHighlightedIds, setRevealedIds]
   );
@@ -185,8 +204,11 @@ const App = () => {
       );
 
       if (matchedWords.length > 0) {
+        const hasNewReveal = matchedWords.some(
+          (entry) => !revealedIds.has(entry.id)
+        );
         setResultStatus("correct");
-        playTone("correct");
+        playTone(hasNewReveal ? "correct" : "correct_again");
         revealWords(matchedWords);
         if (isTypingOpen) {
           closeTypingOverlay();
@@ -208,6 +230,7 @@ const App = () => {
       isPressing,
       isTypingOpen,
       playTone,
+      revealedIds,
       revealWords,
       setIsListening,
       setIsPressing,

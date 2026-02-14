@@ -110,6 +110,7 @@ const WordListSection = () => {
                           return (
                             <tr
                               key={entry.id}
+                              id={`word-row-${entry.id}`}
                               ref={registerRowRef(entry.id)}
                               className={
                                 highlightedIds.has(entry.id)
