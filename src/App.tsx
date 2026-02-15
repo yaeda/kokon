@@ -2,6 +2,9 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
+import correctMp3 from "./assets/sounds/correct.mp3";
+import correctAgainMp3 from "./assets/sounds/correct_again.mp3";
+import incorrectMp3 from "./assets/sounds/incorrect.mp3";
 import AppHeader from "./components/AppHeader";
 import ListeningOverlay from "./components/ListeningOverlay";
 import OptionsDrawer from "./components/OptionsDrawer";
@@ -143,10 +146,10 @@ const App = () => {
           : incorrectAudioRef;
     const src =
       tone === "correct"
-        ? "/sounds/correct.mp3"
+        ? correctMp3
         : tone === "correct_again"
-          ? "/sounds/correct_again.mp3"
-          : "/sounds/incorrect.mp3";
+          ? correctAgainMp3
+          : incorrectMp3;
 
     if (!audioRef.current) {
       audioRef.current = new Audio(src);
@@ -561,7 +564,7 @@ const App = () => {
           setIsTypingOpen(true);
           setTypingValue("");
         }}
-        className="fixed bottom-6 right-6 z-30 flex h-12 w-12 items-center justify-center rounded-full border border-slate-700 bg-slate-900/80 text-sm font-semibold text-white shadow-lg transition hover:border-slate-500 group-data-[theme=light]:border-slate-200 group-data-[theme=light]:bg-white group-data-[theme=light]:text-slate-700 group-data-[theme=light]:hover:border-slate-300 md:hidden"
+        className="fixed right-6 bottom-6 z-30 flex h-12 w-12 items-center justify-center rounded-full border border-slate-700 bg-slate-900/80 text-sm font-semibold text-white shadow-lg transition group-data-[theme=light]:border-slate-200 group-data-[theme=light]:bg-white group-data-[theme=light]:text-slate-700 hover:border-slate-500 group-data-[theme=light]:hover:border-slate-300 md:hidden"
         aria-label="入力を開く"
       >
         入力
