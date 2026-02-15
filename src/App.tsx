@@ -16,6 +16,7 @@ import {
   getSpeechRecognitionConstructor,
   getSpeechRecognitionStatic
 } from "./lib/speech";
+import confetti from "canvas-confetti";
 import type { WordEntry } from "./lib/spreadsheet";
 import { normalizeReading } from "./lib/spreadsheet";
 import { closeTypingOverlayAtom, loadSpreadsheetAtom } from "./state/actions";
@@ -235,6 +236,13 @@ const App = () => {
           (entry) => !revealedIds.has(entry.id)
         );
         setResultStatus("correct");
+        if (hasNewReveal) {
+          try {
+            confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+          } catch (e) {
+            // ignore confetti errors
+          }
+        }
         playTone(hasNewReveal ? "correct" : "correct_again");
         revealWords(matchedWords);
         if (isTypingOpen) {
